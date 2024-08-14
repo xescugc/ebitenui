@@ -25,7 +25,8 @@ func main() {
 	buttonImage, _ := loadButtonImage()
 
 	// load button text font
-	face, _ := loadFont(20)
+	face20, _ := loadFont(20)
+	face40, _ := loadFont(40)
 
 	// construct a new container that serves as the root of the UI hierarchy
 	rootContainer := widget.NewContainer(
@@ -36,23 +37,27 @@ func main() {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	// construct a button
-	button := widget.NewButton(
-		// set general widget options
-		widget.ButtonOpts.WidgetOpts(
-			// instruct the container's anchor layout to center the button both horizontally and vertically
+	buttonsC := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(20),
+		)),
+		widget.ContainerOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionCenter,
 				VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			}),
 		),
+	)
 
+	// construct a button
+	button1 := widget.NewButton(
 		// specify the images to use
 		widget.ButtonOpts.Image(buttonImage),
 
 		// specify the button's text, the font face, and the color
 		//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-		widget.ButtonOpts.Text("Hello, [color=FF00FF]World![/color]", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Hello, [color=FF00FF]World![/color]", face20, &widget.ButtonTextColor{
 			Idle:    color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
 			Hover:   color.NRGBA{0, 255, 128, 255},
 			Pressed: color.NRGBA{255, 0, 0, 255},
@@ -90,8 +95,58 @@ func main() {
 		// widget.ButtonOpts.DisableDefaultKeys(),
 	)
 
+	// construct a button
+	button2 := widget.NewButton(
+		// specify the images to use
+		widget.ButtonOpts.Image(buttonImage),
+
+		// specify the button's text, the font face, and the color
+		//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Unchecked", face20, &widget.ButtonTextColor{
+			Idle:    color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+			Hover:   color.NRGBA{0, 255, 128, 255},
+			Pressed: color.NRGBA{255, 0, 0, 255},
+		}),
+		widget.ButtonOpts.TextProcessBBCode(true),
+		// specify that the button's text needs some padding for correct display
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			txt := args.Button.Text()
+			if args.Button.State() == widget.WidgetChecked {
+				txt.Label = "Checked"
+				txt.Face = face40
+				txt.Inset = widget.Insets{
+					Left:   80,
+					Right:  80,
+					Top:    80,
+					Bottom: 80,
+				}
+			} else {
+				txt.Label = "Unchecked"
+				txt.Face = face20
+				txt.Inset = widget.Insets{
+					Left:   30,
+					Right:  30,
+					Top:    5,
+					Bottom: 5,
+				}
+			}
+		}),
+		widget.ButtonOpts.ToggleMode(),
+	)
+
+	buttonsC.AddChild(button1)
+	buttonsC.AddChild(button2)
+
 	// add the button as a child of the container
-	rootContainer.AddChild(button)
+	rootContainer.AddChild(buttonsC)
 
 	// construct the UI
 	ui := ebitenui.UI{
@@ -104,7 +159,7 @@ func main() {
 
 	game := game{
 		ui:  &ui,
-		btn: button,
+		btn: button1,
 	}
 
 	// run Ebiten main loop
