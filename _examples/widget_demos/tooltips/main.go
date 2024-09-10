@@ -83,7 +83,7 @@ func main() {
 		widget.ButtonOpts.Image(buttonImage),
 
 		// specify the button's text, the font face, and the color
-		widget.ButtonOpts.Text("Hover for tooltip", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Hover for tooltip 1", face, &widget.ButtonTextColor{
 			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
 		}),
 
@@ -97,14 +97,13 @@ func main() {
 
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			println("button clicked")
 		}),
 	)
 	// add the button as a child of the container
 	rootContainer.AddChild(button)
 
 	//Use the NewTextToolTip convenience method to create the tooltip
-	btn2ToolTip := widget.NewTextToolTip("Label: 1\nLabel: 2\nLabel: 3\nLabel: 4\nLabel: 5",
+	btn2ToolTip := widget.NewTextToolTip("TXT Label: 1\nLabel: 2\nLabel: 3\nLabel: 4\nLabel: 5",
 		face, color.White,
 		image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 230, A: 255}))
 
@@ -127,7 +126,7 @@ func main() {
 		widget.ButtonOpts.Image(buttonImage),
 
 		// specify the button's text, the font face, and the color
-		widget.ButtonOpts.Text("Hover for tooltip", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Hover for tooltip 2", face, &widget.ButtonTextColor{
 			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
 		}),
 
@@ -141,7 +140,11 @@ func main() {
 
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			println("button2 clicked")
+			if button.GetWidget().Visibility == widget.Visibility_Hide {
+				button.GetWidget().Visibility = widget.Visibility_Show
+			} else {
+				button.GetWidget().Visibility = widget.Visibility_Hide
+			}
 		}),
 	)
 	// add the button2 as a child of the container
