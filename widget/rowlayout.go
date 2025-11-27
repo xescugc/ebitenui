@@ -1,6 +1,8 @@
 package widget
 
-import "image"
+import (
+	"image"
+)
 
 // RowLayout layouts widgets in either a single row or a single column,
 // optionally stretching them in the other direction.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"image/color"
 	"log"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"golang.org/x/image/font/gofont/goregular"
 )
 
 // Like button example, but use image instead of text for the label.
@@ -23,6 +26,8 @@ func main() {
 	buttonImage := loadButtonImage()
 	buttonIcon := loadButtonIcon()
 	buttonDisabledIcon := loadDisabledButtonIcon()
+
+	face, _ := loadFont(20)
 
 	// construct a new container that serves as the root of the UI hierarchy
 	rootContainer := widget.NewContainer(
@@ -46,11 +51,27 @@ func main() {
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 		})),
 	)
+	btnRL := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+		)),
+	)
+
 	btnIconG := widget.NewGraphic(
 		widget.GraphicOpts.Images(&widget.GraphicImage{
 			Idle:     buttonIcon,
 			Disabled: buttonDisabledIcon,
 		},
+		),
+	)
+	btnTxt := widget.NewText(
+		widget.TextOpts.Text("TXT", &face, color.White),
+		widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionCenter),
+		widget.TextOpts.WidgetOpts(
+			func(w *widget.Widget) {
+				// NOTE: Uncomment this to start not visible and it'll not show
+				//w.Visibility = widget.Visibility_Hide
+			},
 		),
 	)
 	// construct a pressable button
@@ -62,16 +83,31 @@ func main() {
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 			println("button clicked")
 			btnIconG.GetWidget().Disabled = !btnIconG.GetWidget().Disabled
+			if btnTxt.GetWidget().Visibility == widget.Visibility_Show {
+				btnTxt.GetWidget().Visibility = widget.Visibility_Hide
+			} else {
+				btnTxt.GetWidget().Visibility = widget.Visibility_Show
+				println("SHOW")
+			}
 		}),
+		widget.ButtonOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(96, 96),
+		),
 	)
+
 	buttonStackedLayout.AddChild(button)
+
 	// Put an image on top of the button, it will be centered.
 	// If your image doesn't fit the button and there is no Y stretching support,
 	// you may see a transparent rectangle inside the button.
 	// To fix that, either use a separate button image (that can fit the image)
 	// or add an appropriate stretching.
-	buttonStackedLayout.AddChild(
+	btnRL.AddChild(
 		btnIconG,
+		btnTxt,
+	)
+	buttonStackedLayout.AddChild(
+		btnRL,
 	)
 
 	// since our button is a multi-widget object, add its wrapping container
@@ -139,4 +175,16 @@ func loadButtonImage() *widget.ButtonImage {
 		Hover:   hover,
 		Pressed: pressed,
 	}
+}
+func loadFont(size float64) (text.Face, error) {
+	s, err := text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF))
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	return &text.GoTextFace{
+		Source: s,
+		Size:   size,
+	}, nil
 }
