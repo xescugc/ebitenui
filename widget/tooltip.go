@@ -224,8 +224,16 @@ func (t *ToolTip) idleState() toolTipState {
 			input.MouseButtonPressed(ebiten.MouseButtonRight) ||
 			!parent.IsVisible() {
 
-			t.visible = false
-			parent.FireToolTipEvent(t.window, false)
+			// Only a shown tooltip needs hiding: firing this every frame for
+			// every hidden tooltip allocated thousands of events a frame.
+			if t.visible {
+				// Only a shown tooltip needs hiding: firing this every frame for
+				// every hidden tooltip allocated thousands of events a frame.
+				if t.visible {
+					t.visible = false
+					parent.FireToolTipEvent(t.window, false)
+				}
+			}
 			return nil
 		}
 
@@ -258,8 +266,12 @@ func (t *ToolTip) armedState(p image.Point, timer *time.Timer, expired *atomic.V
 			!parent.EffectiveInputLayer().ActiveFor(x, y, input.LayerEventTypeAny) {
 
 			if !(t.KeepOnHover && cp.In(t.content.GetWidget().Rect)) {
-				t.visible = false
-				parent.FireToolTipEvent(t.window, false)
+				// Only a shown tooltip needs hiding: firing this every frame for
+				// every hidden tooltip allocated thousands of events a frame.
+				if t.visible {
+					t.visible = false
+					parent.FireToolTipEvent(t.window, false)
+				}
 				return t.idleState()
 			}
 		}
@@ -295,8 +307,12 @@ func (t *ToolTip) showingState(p image.Point) toolTipState {
 			!parent.EffectiveInputLayer().ActiveFor(x, y, input.LayerEventTypeAny) {
 
 			if !(t.KeepOnHover && cp.In(t.content.GetWidget().Rect)) {
-				t.visible = false
-				parent.FireToolTipEvent(t.window, false)
+				// Only a shown tooltip needs hiding: firing this every frame for
+				// every hidden tooltip allocated thousands of events a frame.
+				if t.visible {
+					t.visible = false
+					parent.FireToolTipEvent(t.window, false)
+				}
 				return t.idleState()
 			}
 		}
