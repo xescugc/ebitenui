@@ -19,6 +19,11 @@ type NineSlice struct {
 
 	init  sync.Once
 	tiles [9]*ebiten.Image
+
+	// opts is reused by drawTile: a fresh DrawImageOptions escaped to the
+	// heap on every tile (through optsFunc), hundreds of allocations a
+	// frame in a big UI. Drawing happens on the game thread only.
+	opts ebiten.DrawImageOptions
 }
 
 type borders struct {
@@ -233,7 +238,8 @@ func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, t
 		return
 	}
 
-	opts := ebiten.DrawImageOptions{
+	opts := &n.opts
+	*opts = ebiten.DrawImageOptions{
 		Filter: ebiten.FilterNearest,
 	}
 
@@ -244,10 +250,10 @@ func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, t
 	opts.GeoM.Translate(float64(tx), float64(ty))
 
 	if optsFunc != nil {
-		optsFunc(&opts)
+		optsFunc(opts)
 	}
 
-	screen.DrawImage(tile, &opts)
+	screen.DrawImage(tile, opts)
 }
 
 func (n *NineSlice) createTiles() {
