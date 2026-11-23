@@ -65,6 +65,17 @@ type textMeasurements struct {
 	ascent              float64
 	boundingBoxWidth    float64
 	boundingBoxHeight   float64
+
+	// glyphs are the laid-out glyphs of each line's pieces (one piece, the
+	// whole line, without BBCode), made once per measurement (lineGlyphs):
+	// laying text out every frame was most of a screen's text cost.
+	glyphs [][]glyphPiece
+}
+
+// glyphPiece is a laid-out piece of a line and its width.
+type glyphPiece struct {
+	glyphs []text.Glyph
+	width  float64
 }
 
 type bbCodeText struct {
@@ -528,35 +539,26 @@ func (t *Text) draw(screen *ebiten.Image) {
 		}
 
 		if t.ProcessBBCode {
-			for _, piece := range t.measurements.processedLines[linesIdx] {
-				wordWidth, _ := text.Measure(piece.text, *t.computedParams.Face, 0)
-
-				op := &text.DrawOptions{}
-				op.GeoM.Translate(lx, ly)
+			pieces := t.lineGlyphs()[linesIdx]
+			for pi, piece := range t.measurements.processedLines[linesIdx] {
+				var cs ebiten.ColorScale
 				if piece.linkValue != nil {
 					if piece.hovered && t.computedParams.LinkColor.Hover != nil {
-						op.ColorScale.ScaleWithColor(t.computedParams.LinkColor.Hover)
+						cs.ScaleWithColor(t.computedParams.LinkColor.Hover)
 					} else {
-						op.ColorScale.ScaleWithColor(t.computedParams.LinkColor.Idle)
+						cs.ScaleWithColor(t.computedParams.LinkColor.Idle)
 					}
 				} else {
-					op.ColorScale.ScaleWithColor(piece.color)
+					cs.ScaleWithColor(piece.color)
 				}
-				text.Draw(screen, piece.text, *t.computedParams.Face, op)
-				lx += float64(wordWidth)
+				drawGlyphs(screen, pieces[pi].glyphs, lx, ly, cs)
+				lx += pieces[pi].width
 			}
 
 		} else {
-			op := &text.DrawOptions{}
-			op.GeoM.Translate(lx, ly)
-			op.ColorScale.ScaleWithColor(t.computedParams.Color)
-			lineStr := ""
-
-			for _, piece := range t.measurements.processedLines[linesIdx] {
-				lineStr += piece.text
-			}
-
-			text.Draw(screen, lineStr, *t.computedParams.Face, op)
+			var cs ebiten.ColorScale
+			cs.ScaleWithColor(t.computedParams.Color)
+			drawGlyphs(screen, t.lineGlyphs()[linesIdx][0].glyphs, lx, ly, cs)
 		}
 	}
 }
@@ -777,4 +779,44 @@ func (t *Text) getCursorOffset() image.Point {
 func (t *Text) createWidget() {
 	t.widget = NewWidget(t.widgetOpts...)
 	t.widgetOpts = nil
+}
+
+// lineGlyphs lays out the measured lines once: one piece per BBCode piece,
+// or the whole line without BBCode.
+func (t *Text) lineGlyphs() [][]glyphPiece {
+	if t.measurements.glyphs != nil {
+		return t.measurements.glyphs
+	}
+	face := *t.computedParams.Face
+	out := make([][]glyphPiece, len(t.measurements.processedLines))
+	for i, line := range t.measurements.processedLines {
+		if t.ProcessBBCode {
+			for _, piece := range line {
+				w, _ := text.Measure(piece.text, face, 0)
+				out[i] = append(out[i], glyphPiece{glyphs: text.AppendGlyphs(nil, piece.text, face, nil), width: w})
+			}
+			continue
+		}
+		lineStr := ""
+		for _, piece := range line {
+			lineStr += piece.text
+		}
+		out[i] = []glyphPiece{{glyphs: text.AppendGlyphs(nil, lineStr, face, nil)}}
+	}
+	t.measurements.glyphs = out
+	return out
+}
+
+// drawGlyphs draws laid-out glyphs at (x, y) tinted by cs, as text.Draw
+// does.
+func drawGlyphs(screen *ebiten.Image, glyphs []text.Glyph, x, y float64, cs ebiten.ColorScale) {
+	op := &ebiten.DrawImageOptions{ColorScale: cs}
+	for _, g := range glyphs {
+		if g.Image == nil {
+			continue
+		}
+		op.GeoM.Reset()
+		op.GeoM.Translate(g.X+x, g.Y+y)
+		screen.DrawImage(g.Image, op)
+	}
 }
