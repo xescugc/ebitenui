@@ -441,6 +441,13 @@ func (t *ToolTip) processContentPosition(p image.Point, sx, sy int, widgetRect i
 		result = processContentPositionWorker(p, sx, sy, horizontalAnchor, TOOLTIP_ANCHOR_START)
 	}
 
+	// Content bigger than the room on either side of the anchor would still
+	// leave the window after the flip: keep it inside, top-left first.
+	if windowSize.X > 0 && windowSize.Y > 0 {
+		result.X = max(0, min(result.X, windowSize.X-sx))
+		result.Y = max(0, min(result.Y, windowSize.Y-sy))
+	}
+
 	return result
 }
 
